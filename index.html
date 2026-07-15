@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Ghost Video Vault</title>
+  <link rel="stylesheet" href="css/video.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <button id="backBtn" class="icon-btn" type="button" aria-label="Back">←</button>
+      <div><small>GHOST</small><h1 id="pageTitle">Video Vault</h1></div>
+      <button id="infoBtn" class="icon-btn" type="button" aria-label="Information">ⓘ</button>
+    </header>
+
+    <section class="hero" id="mainHero">
+      <img src="assets/video-vault.png" alt="" class="hero-icon">
+      <div class="hero-copy"><h2>Albums</h2><p id="heroSummary">0 videos stored</p></div>
+      <div class="hero-actions">
+        <label for="picker" class="primary">+ Video</label>
+        <button id="newAlbumBtn" class="secondary" type="button">+ Album</button>
+      </div>
+      <input id="picker" type="file" accept="video/*" multiple hidden>
+    </section>
+
+    <section class="stats" id="mainStats">
+      <div><b id="videoCount">0</b><span>Videos</span></div>
+      <div><b id="albumCount">3</b><span>Albums</span></div>
+      <div><b id="storageCount">0 MB</b><span>Storage</span></div>
+    </section>
+
+    <section id="albumsPage"><div id="albumGrid" class="album-grid"></div></section>
+
+    <section id="galleryPage" class="hidden">
+      <div class="gallery-head">
+        <button id="albumBackBtn" class="icon-btn" type="button" aria-label="Back">←</button>
+        <div class="album-heading"><h2 id="albumTitle">Library</h2><span id="albumMeta">0 videos</span></div>
+        <span class="header-spacer" aria-hidden="true"></span>
+      </div>
+
+      <div class="gallery-search-row">
+        <label class="search-box"><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="Search by video name"></label>
+        <select id="sortSelect" aria-label="Sort videos">
+          <option value="name-asc">A–Z</option><option value="name-desc">Z–A</option>
+          <option value="newest">Newest</option><option value="oldest">Oldest</option>
+        </select>
+      </div>
+
+      <div class="gallery-action-row">
+        <label for="picker" class="primary gallery-upload">+ Video</label>
+        <button id="selectBtn" type="button" class="secondary gallery-select">Select</button>
+      </div>
+
+      <div id="selectBar" class="select-bar hidden">
+        <b id="selectedCount">0 selected</b><button id="moveBtn" type="button">Move</button>
+        <button id="deleteBtn" type="button" class="danger">Delete</button><button id="cancelSelectBtn" type="button">Cancel</button>
+      </div>
+
+      <div id="videoGrid" class="video-grid"></div>
+      <div id="emptyState" class="empty hidden"><img src="assets/video-vault.png" alt=""><h3>No videos here yet</h3><p>Add videos or move them into this album.</p></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <dialog id="albumDialog" class="modal"><form id="albumForm" class="modal-card"><h2>Create album</h2><p>Give your collection a name.</p><input id="albumName" maxlength="36" autocomplete="off" required><div class="modal-actions"><button id="cancelAlbumBtn" type="button" class="secondary">Cancel</button><button type="submit" class="primary">Create</button></div></form></dialog>
+  <dialog id="moveDialog" class="modal"><div class="modal-card"><h2>Move videos</h2><p>Choose a destination.</p><div id="moveChoices" class="choices"></div><button id="closeMoveBtn" type="button" class="secondary full">Cancel</button></div></dialog>
+  <dialog id="deleteDialog" class="modal"><div class="modal-card delete-card"><img src="assets/delete-warning.png" alt="" class="delete-art"><div><h2>Delete permanently?</h2><p id="deleteMessage">This action cannot be undone.</p></div><div class="modal-actions"><button id="cancelDeleteBtn" type="button" class="secondary">Cancel</button><button id="confirmDeleteBtn" type="button" class="danger">Delete</button></div></div></dialog>
+  <dialog id="uploadDialog" class="modal"><div class="modal-card"><h2>Add videos</h2><p>Choose which album the selected videos should be added to.</p><div id="uploadChoices" class="choices"></div><button id="cancelUploadBtn" type="button" class="secondary full">Cancel</button></div></dialog>
+  <dialog id="renameDialog" class="modal"><form id="renameForm" class="modal-card"><h2>Rename video</h2><p>Enter a new name for this video.</p><input id="renameInput" maxlength="80" autocomplete="off" required><div class="modal-actions"><button id="cancelRenameBtn" type="button" class="secondary">Cancel</button><button type="submit" class="primary">Rename</button></div></form></dialog>
+
+  <dialog id="videoInfoDialog" class="modal"><div class="modal-card info-card"><h2>Video Info</h2><dl class="info-list">
+    <div><dt>Album</dt><dd id="infoAlbum">—</dd></div><div><dt>Favourite</dt><dd id="infoFavourite">—</dd></div>
+    <div><dt>Name</dt><dd class="info-name-row"><span id="infoName">—</span><button id="infoRenameBtn" type="button" class="info-rename-button" aria-label="Rename video">✎</button></dd></div>
+    <div><dt>Duration</dt><dd id="infoDuration">—</dd></div><div><dt>Resolution</dt><dd id="infoResolution">—</dd></div>
+    <div><dt>Size</dt><dd id="infoSize">—</dd></div><div><dt>Date</dt><dd id="infoDate">—</dd></div></dl>
+    <button id="albumCoverToggle" type="button" class="album-cover-toggle"><span>Use as album cover</span><span class="album-cover-status"><span id="albumCoverCount" class="album-cover-count"></span><span class="album-cover-tick">✓</span></span></button>
+    <button id="closeInfoBtn" type="button" class="secondary full">Close</button></div></dialog>
+
+  <dialog id="pinDialog" class="modal"><form id="pinForm" class="modal-card pin-card"><img class="pin-cover" src="assets/private-vault-cover.png" alt=""><h2>Private Vault</h2><p>Enter your 4-digit PIN to unlock this album.</p><input id="pinInput" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="••••" autocomplete="off" required><p id="pinError" class="pin-error hidden">Incorrect PIN</p><div class="modal-actions"><button id="cancelPinBtn" type="button" class="secondary">Cancel</button><button type="submit" class="primary">Unlock</button></div></form></dialog>
+
+  <dialog id="player" class="player">
+    <div id="playerStage" class="player-stage">
+      <video id="playerVideo" playsinline preload="metadata"></video>
+      <div id="playerGestureLayer" class="player-gesture-layer" aria-hidden="true"></div>
+      <div id="seekFeedback" class="seek-feedback" aria-live="polite"></div>
+
+      <div id="playerChrome" class="player-chrome hidden-ui">
+        <header class="player-topbar">
+          <button id="closePlayerBtn" class="ghost-player-icon" type="button" aria-label="Close player">←</button>
+
+          <div class="player-title">
+            <strong id="playerName">Video</strong>
+            <span id="playerPos">1 of 1</span>
+          </div>
+
+          <button id="infoBtnPlayer" class="ghost-player-icon" type="button" aria-label="Video information">ⓘ</button>
+        </header>
+
+        <button id="playPauseBtn" class="cinema-play-button" type="button" aria-label="Play video">
+          <span id="playPauseGlyph">▶</span>
+        </button>
+
+        <section class="cinema-controls" aria-label="Playback controls">
+          <div class="cinema-meta-row">
+            <span id="timeSummary">0:00 / 0:00</span>
+
+            <div class="cinema-media-actions">
+              <button id="muteBtn" class="cinema-icon-button" type="button" aria-label="Mute video">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path class="speaker-shape" d="M4 9v6h4l5 4V5L8 9H4z"></path>
+                  <path class="sound-wave wave-one" d="M16 9.5a4 4 0 0 1 0 5"></path>
+                  <path class="sound-wave wave-two" d="M18.5 7a7 7 0 0 1 0 10"></path>
+                  <path class="mute-line" d="m16 9 5 6m0-6-5 6"></path>
+                </svg>
+              </button>
+
+              <button id="fullscreenBtn" class="cinema-icon-button" type="button" aria-label="Enter fullscreen">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 4H4v4M16 4h4v4M20 16v4h-4M4 16v4h4"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <input id="progressSlider" class="cinema-progress-slider" type="range" min="0" max="1000" value="0" aria-label="Video progress">
+        </section>
+
+        <nav class="player-actions" aria-label="Video actions">
+          <button id="favBtn" type="button" aria-label="Favourite video">
+            <span class="player-action-icon">★</span>
+            <span>Favourite</span>
+          </button>
+          <button id="moveOneBtn" type="button" aria-label="Move video">
+            <span class="player-action-icon">▣</span>
+            <span>Move</span>
+          </button>
+          <button id="deleteOneBtn" type="button" class="player-delete" aria-label="Delete video">
+            <span class="player-action-icon">⌫</span>
+            <span>Delete</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </dialog>
+
+  <nav class="vault-nav" aria-label="Ghost navigation"><button id="vaultHomeBtn" type="button"><img src="assets/home-nav.png" alt=""></button><button id="vaultHideBtn" type="button"><img src="assets/hide-nav.png" alt=""></button><button id="vaultSettingsBtn" type="button"><img src="assets/settings-nav.png" alt=""></button></nav>
+  <script src="js/video.js"></script>
+</body>
+</html>
